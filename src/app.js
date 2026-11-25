@@ -1,0 +1,48 @@
+import express from "express"
+import cors from "cors";
+import { setupSwagger } from "./config/swagger.js"; 
+import path from "path";
+import eventrouter from "./routes/events.routes.js"
+import cookieParser from "cookie-parser"
+import seatCategoryrouter from "./routes/seatCategory.routes.js"
+import Transactionrouter from "./routes/Transaction.routes.js"
+import generateSeatsrouter from "./routes/seat.routes.js"
+import authrouter from "./routes/auth.routes.js"
+import { authmiddleware, isAdmin } from "./middlewares/auth.middleware.js";
+import AccountSuspensionrouter from "./routes/AccountSuspension.routes.js"
+import testRateLimiterRouter from "./routes/testRateLimiter.routes.js";
+
+import viewRoutes from "./routes/view.routes.js";
+
+const app=express();
+
+// Enable CORS for frontend Vite & local hosts with credentials
+app.use(cors({
+  origin: ["http://localhost:5173", "http://localhost:3000", "http://127.0.0.1:5173", "http://127.0.0.1:3000"],
+  credentials: true,
+}));
+
+app.use(cookieParser());
+app.use(express.json());
+
+app.use("/public", express.static(path.join(process.cwd(), "public")));
+
+app.use("/", viewRoutes);
+
+setupSwagger(app);
+app.use("/api/auth",authrouter);
+
+//ALL Protected Routes 
+app.use("/api/events", eventrouter);
+app.use("/api/seatCategory", authmiddleware, seatCategoryrouter);
+app.use("/api/Transactions", authmiddleware, Transactionrouter);
+app.use("/api/generateSeat", authmiddleware, generateSeatsrouter)
+
+app.use("/api/seat", generateSeatsrouter);
+//admin route
+app.use("/api/Account_Suspension",authmiddleware,isAdmin,AccountSuspensionrouter)
+
+//TEST RATE Limiter
+app.use("/api/test", testRateLimiterRouter);
+
+export {app}
